@@ -1,0 +1,1 @@
+El proyecto AgrarIA está financiado a través del Programa Misiones de I+D en Inteligencia Artificial de la Secretaría de Estado de Digitalización e Inteligencia Artificial (SEDIA) del Ministerio de Asuntos Económicos y Transformación Digital (Nº expediente MIA.2021.M01.0004), correspondiente a los fondos del Plan de Recuperación, Resiliencia y Transformación.
