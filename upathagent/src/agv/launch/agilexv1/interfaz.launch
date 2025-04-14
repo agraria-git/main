@@ -1,0 +1,24 @@
+<launch>
+  <master auto="start"/>
+
+  <!-- MQTT -->
+  <!-- <node name="mqttNode"          pkg="agv"  type="mqttNode.py"/> -->
+
+  <!-- MQTT Mauri -->
+  <node name="mqttNode"          pkg="agv"  type="mqttNodeNew.py"/>
+  <node name="utmNode"          pkg="agv"  type="UTM.py"/>
+
+
+<!-- SAVE POINT -->
+  <node name="savePointNode"          pkg="agv"  type="savePointNode.py"/>
+
+
+<!-- STREAM POSITION -->
+  <node name="streamPositionNode"          pkg="agv"  type="streamPositionNode.py"/>
+
+
+<!-- MULTIGOAL -->
+  <!-- node name="multiGoalNodev2"          pkg="agv"  type="multiGoalNodev2.py"/ -->
+
+
+</launch>

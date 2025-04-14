@@ -1,0 +1,45 @@
+<launch>
+  <master auto="start"/>
+
+<!-- IMU -->
+  <node name="imuNode"          pkg="agv"  type="imuNode.py"/>
+    <!-- <param name="serial_port"         type="string" value="/dev/IMU"/> -->
+    <param name="serial_port"         type="string" value="/dev/ttyUSB1"/>
+
+
+
+<!-- Esto es la IMU Filter -->
+<!-- Al lanzarse desde la Nvidia Orin dice que falta la librería rospkg porque el archivo magnetometerNode.py se lanza desde Python 1 -->
+
+  <node name="magnetometerNode"          pkg="agv"  type="magnetometerNode.py"/>
+
+ <!-- #### Nodelet manager ###################################################### -->
+  
+  <!-- #### Complementary filter -->
+  <node pkg="nodelet" type="nodelet" name="imu_manager"
+      args="manager" output="screen" />
+
+    <node pkg="imu_complementary_filter" type="complementary_filter_node"
+        name="complementary_filter_gain_node" output="screen">
+      <param name="do_bias_estimation" value="false"/>
+      <param name="do_adaptive_gain" value="false"/>
+      <param name="use_mag" value="true"/>
+      <param name="gain_acc" value="0.01"/>
+      <param name="gain_mag" value="0.01"/>
+      <param name="publish_debug_topics" value="true"/>
+
+  </node>
+
+  <!--node pkg="nodelet" type="nodelet" name="ImuFilterNodelet"
+    args="load imu_filter_madgwick/ImuFilterNodelet imu_manager"
+    output="screen">
+   <param name= "publish_debug_topics" value="true"/>
+   <param name="publish_tf" value="false"/>
+</node-->
+
+<!-- Aquí acaba IMU filter -->
+
+
+
+</launch>
+

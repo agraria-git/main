@@ -1,0 +1,11 @@
+<launch>
+	<master auto="start"/>
+	<include file="$(find agv)/launch/supervisor/SCOUT.launch" />
+	<include file="$(find agv)/launch/supervisor/LIDAR.launch" />
+	<include file="$(find agv)/launch/supervisor/IMU.launch" />
+	<include file="$(find agv)/launch/supervisor/MAGIC_sim.launch" />
+	<include file="$(find agv)/launch/supervisor/UTM.launch" />
+	<include file="$(find agv)/launch/supervisor/STREAM.launch" />
+	<include file="$(find agv)/launch/supervisor/SAVE.launch" />
+	<include file="$(find agv)/launch/supervisor/MQTT.launch" />
+</launch>

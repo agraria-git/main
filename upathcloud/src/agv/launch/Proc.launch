@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<launch>
+
+
+  <!-- STREAM POSITION -->
+    <node name="streamPositionNode" pkg="agv" type="streamPositionNode.py" />
+
+  <!-- MQTT -->
+    <node name="mqttNode" pkg="agv" type="mqttNode.py"/>
+
+  <!-- MISSIONMANAGER -->
+    <node name="missionManager" pkg="agv" type="missionManager.py"/>
+
+  <!-- UTM -->
+    <node name="utmNode" pkg="agv" type="UTM.py"/> 
+
+  <!-- SAVE POINT -->
+    <node name="savePointNode" pkg="agv" type="savePointNode.py"/>
+
+  <!-- PROCESSING IMU -->
+
+  <!-- node name="magnetometerNode" pkg="agv" type="magnetometerNode.py"/ -->
+
+  <node pkg="nodelet" type="nodelet" name="imu_manager"
+    args="manager" output="screen" />
+
+  <node pkg="imu_complementary_filter" type="complementary_filter_node"
+      name="complementary_filter_gain_node" output="screen">
+    <param name="do_bias_estimation" value="false"/>
+    <param name="do_adaptive_gain" value="false"/>
+    <param name="use_mag" value="true"/>
+    <param name="gain_acc" value="0.01"/>
+    <param name="gain_mag" value="0.01"/>
+    <param name="publish_debug_topics" value="true"/>
+  </node>
+
+
+</launch>

@@ -1,0 +1,31 @@
+<launch>
+  <master auto="start"/>
+
+<!-- STATICS TF -->
+  <node pkg="agv" type="imu_static_tf.py" name="imu_static_tf" >
+  </node>
+
+  <node pkg="agv" type="laser_static_tf.py" name="laser_static_tf" >
+  </node>
+
+  <node pkg="agv" type="magic_static_tf.py" name="magic_static_tf" >
+  </node>
+
+
+<!-- TRANSFORM POSE NODE -->
+  <node pkg="agv" type="transformPose.py" name="transformNode" >
+  </node>
+
+
+<!-- LOCALIZATION -->
+  <rosparam command="load" file="$(find robot_localization)/params/config_ekfs_1.yaml" />
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true"  output="screen">
+    <param name="frequency" value="50"/>
+    <!-- param name="transform_time_offset" value="0.05"/ -->
+    <!-- param name="transform_timeout" value="0.1"/ -->
+    <remap from="odometry/filtered" to="odom"/>
+    <remap from="imu/data" to="imu"/>
+  </node>
+
+</launch>

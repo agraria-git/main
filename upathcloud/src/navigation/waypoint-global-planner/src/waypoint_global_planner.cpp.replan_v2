@@ -1,0 +1,366 @@
+#include "waypoint_global_planner/waypoint_global_planner.h"
+#include <pluginlib/class_list_macros.h>
+#include <tf/tf.h>
+#include <nav_msgs/Path.h>
+//#include "sensor_msgs/NavSatFix.h"
+
+PLUGINLIB_EXPORT_CLASS(waypoint_global_planner::WaypointGlobalPlanner, nav_core::BaseGlobalPlanner)
+int i = 0;
+
+namespace waypoint_global_planner
+{
+
+WaypointGlobalPlanner::WaypointGlobalPlanner() : costmap_ros_(NULL), initialized_(false), clear_waypoints_(false)
+{
+}
+
+
+WaypointGlobalPlanner::WaypointGlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+{
+  initialize(name, costmap_ros);
+}
+
+
+WaypointGlobalPlanner::~WaypointGlobalPlanner()
+{
+}
+
+
+void WaypointGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+{
+  if(!initialized_)
+  {
+    // get the costmap
+    costmap_ros_ = costmap_ros;
+    costmap_ = costmap_ros_->getCostmap();
+    world_model_ = new base_local_planner::CostmapModel(*costmap_);
+
+    ros::NodeHandle nh;
+    //ros::NodeHandle pnh("~" + name);
+    ros::NodeHandle private_nh("~/" + name);
+
+    // load parameters
+    private_nh.param("epsilon", epsilon_, 1e-1);
+    private_nh.param("waypoints_per_meter", waypoints_per_meter_, 2);
+    //pnh.param("epsilon", epsilon_, 1e-1);
+    //pnh.param("waypoints_per_meter", waypoints_per_meter_, 20);
+
+    // initialize publishers and subscribers
+    //DO: aqui recibe waypoint simples
+    waypoint_sub_ = private_nh.subscribe("/goals", 1000, &WaypointGlobalPlanner::waypointCallback, this);
+
+    //TOADD
+    magic_sub_ = nh.subscribe("/utm_cords", 100, &WaypointGlobalPlanner::magicCallback, this);
+
+    //DO: AquI recibe trayecTORIAS DIRECTAMENTE
+    //do: Modifico para que se subscriba al nodo MQTT /goals
+    external_path_sub_ = private_nh.subscribe("/external_path", 1, &WaypointGlobalPlanner::externalPathCallback, this);
+
+
+    waypoint_marker_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
+    //waypoint_sub_ = pnh.subscribe("/clicked_point", 100, &WaypointGlobalPlanner::waypointCallback, this);
+    //xternal_path_sub_ = pnh.subscribe("external_path", 1, &WaypointGlobalPlanner::externalPathCallback, this);
+    //waypoint_marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
+    goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
+    //plan_pub_ = pnh.advertise<nav_msgs::Path>("plan", 1);
+    plan_pub_ = private_nh.advertise<nav_msgs::Path>("/plan", 1);
+    initialized_ = true;
+    flag_newRoute_ = false;
+    ROS_INFO("Planner has been initialized");
+  }
+  else
+  {
+    ROS_WARN("This planner has already been initialized");
+  }
+}
+
+
+bool WaypointGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start_pose,
+  const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan)
+{
+
+  // if (flag_newRoute_ == true){
+
+    geometry_msgs::PoseStamped p = path_.poses[0];
+    double yaw = atan2(p.pose.position.y - currentPos.pose.position.y, p.pose.position.x - currentPos.pose.position.x);
+    currentPos.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+
+    if (flag_newRoute_ == false){
+      ROS_INFO("Se pide replanificación");
+      path_.poses.clear();
+      path_.poses.insert(path_.poses.end(), waypoints_.begin(), waypoints_.end());
+      // ROS_INFO("path_actualizado");
+    }
+
+    path_.poses.insert(path_.poses.begin(), currentPos);
+
+    interpolatePath(path_);
+    plan_pub_.publish(path_);
+    createAndPublishMarkersFromPath(path_.poses);
+    plan = path_.poses;
+    // ROS_INFO("Published global plan");
+    ROS_INFO("Plan global publicado");
+  // }
+  // else {
+  //   ROS_INFO("Se pide makePlan pero no se hace nada");
+  // }
+    flag_newRoute_ = false;
+  return true;
+}
+
+
+void WaypointGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::ConstPtr& waypoint)
+{
+  
+  i=i+1;
+  ROS_INFO("Waypoint GMV HOY %d",i);
+  if (clear_waypoints_)
+  {
+    waypoints_.clear();
+    clear_waypoints_ = false;
+  }
+  // add waypoint to the waypoint vector
+  waypoints_.push_back(geometry_msgs::PoseStamped());
+  waypoints_.back().header = waypoint->header;
+  waypoints_.back().pose.position = waypoint->point;
+  waypoints_.back().pose.orientation.w = 1.0;
+
+  // create and publish markers
+  createAndPublishMarkersFromPath(waypoints_);
+
+  if (waypoints_.size() < 2)
+    return;
+
+  geometry_msgs::Pose *p1 = &(waypoints_.end()-2)->pose;
+  geometry_msgs::Pose *p2 = &(waypoints_.end()-1)->pose;
+
+  // calculate orientation of waypoints
+  double yaw = atan2(p2->position.y - p1->position.y, p2->position.x - p1->position.x);
+  p1->orientation = tf::createQuaternionMsgFromYaw(yaw);
+
+  // calculate distance between latest two waypoints and check if it surpasses the threshold epsilon
+  double dist = hypot(p1->position.x - p2->position.x, p1->position.y - p2->position.y);
+  if (dist < epsilon_)
+  {
+    originPos = currentPos;
+
+    p1->orientation = waypoints_[waypoints_.size()-3].pose.orientation;
+    p2->orientation = waypoints_[waypoints_.size()-3].pose.orientation;
+
+    path_.header = waypoint->header;
+    path_.poses.clear();
+    //                 
+    path_.poses.insert(path_.poses.end(), waypoints_.begin(), waypoints_.end());
+    goal_pub_.publish(waypoints_.back());
+    clear_waypoints_ = true;
+
+    ROS_INFO("Published goal pose");
+    flag_newRoute_ = true;
+  }
+}
+
+
+//TOADD
+void WaypointGlobalPlanner::magicCallback(const geometry_msgs::PointStamped& cords)
+{
+  currentPos.header = cords.header;
+  currentPos.pose.position = cords.point;
+  updatePath(waypoints_);
+}
+
+
+void WaypointGlobalPlanner::interpolatePath(nav_msgs::Path& path)
+{
+  double vxN;
+  double vyN;
+  double px;
+  double py;
+  double x1;
+  double y1;
+  double x2;
+  double y2;
+  double dist;
+  std::vector<geometry_msgs::PoseStamped> temp_path;
+
+  ROS_INFO("Interpolando waypoints");
+  for (int j = 0; j < static_cast<int>(path.poses.size() - 1); j++) {
+
+    x1 = path.poses[j].pose.position.x;
+    y1 = path.poses[j].pose.position.y;
+    x2 = path.poses[j + 1].pose.position.x;
+    y2 = path.poses[j + 1].pose.position.y;
+    dist = hypot(x1 - x2, y1 - y2);
+
+    vxN = (x2 - x1) / (dist);
+    vyN = (y2 - y1) / (dist);
+
+    temp_path.push_back(path.poses[j]);
+    geometry_msgs::PoseStamped p = path.poses[j];
+    for (int i = 0; i<int(dist); i++) {
+      p.pose.position.x = x1 + (i + 1) * vxN;
+      p.pose.position.y = y1 + (i + 1) * vyN;
+      temp_path.push_back(p);
+    }
+  }
+
+  // update sequence of poses
+  for (size_t i = 0; i < temp_path.size(); i++)
+    temp_path[i].header.seq = static_cast<int>(i);
+
+  // temp_path.push_back(path.poses.back());
+  path.poses = temp_path;
+}
+
+
+
+void WaypointGlobalPlanner::externalPathCallback(const nav_msgs::PathConstPtr& plan)
+{
+  path_.poses.clear();
+  clear_waypoints_ = true;
+  path_.header = plan->header;
+  path_.poses = plan->poses;
+  createAndPublishMarkersFromPath(path_.poses);
+  goal_pub_.publish(path_.poses.back());
+}
+
+
+void WaypointGlobalPlanner::createAndPublishMarkersFromPath(const std::vector<geometry_msgs::PoseStamped>& path)
+{
+  // clear previous markers
+  visualization_msgs::MarkerArray markers;
+  visualization_msgs::Marker marker;
+  marker.header = path[0].header;
+  marker.ns = "/move_base/waypoint_global_planner";
+  marker.type = visualization_msgs::Marker::SPHERE;
+  marker.action = visualization_msgs::Marker::DELETEALL;
+  marker.scale.x = 0.2;
+  marker.scale.y = 0.2;
+  marker.scale.z = 0.2;
+  marker.color.a = 1.0;
+  marker.color.r = 1.0;
+  marker.color.g = 0.0;
+  marker.color.b = 0.0;
+  marker.id = 0;
+  markers.markers.push_back(marker);
+  waypoint_marker_pub_.publish(markers);
+  marker.action = visualization_msgs::Marker::ADD;
+  markers.markers.clear();
+
+  for (size_t i = 0; i < path.size(); i++)
+  {
+    marker.id = i;
+    marker.pose.position = path[i].pose.position;
+    markers.markers.push_back(marker);
+  }
+
+  waypoint_marker_pub_.publish(markers);
+}
+
+/*
+void WaypointGlobalPlanner::updatePath(std::vector<geometry_msgs::PoseStamped>& Wpath)
+{
+  if (Wpath.size()>2){
+    geometry_msgs::Point pObj = Wpath[0].pose.position;
+    geometry_msgs::Point pAct = currentPos.pose.position;
+    float dist = sqrt((pObj.x-pAct.x)*(pObj.x-pAct.x)+(pObj.y-pAct.y)*(pObj.y-pAct.y));
+    if (dist<1.5){
+      Wpath.erase(Wpath.begin());
+      ROS_INFO("Waypoint alcanzado");
+    }
+  }
+}
+*/
+
+void WaypointGlobalPlanner::updatePath(std::vector<geometry_msgs::PoseStamped>& Wpath)
+{
+/* */
+  if (Wpath.size()>=2){
+    geometry_msgs::Point pObj1 = Wpath[0].pose.position;
+    geometry_msgs::Point pObj2 = Wpath[1].pose.position;
+    geometry_msgs::Point pAct = currentPos.pose.position;
+    geometry_msgs::Point pOri = originPos.pose.position;
+
+    float dist = sqrt((pObj1.x-pAct.x)*(pObj1.x-pAct.x)+(pObj1.y-pAct.y)*(pObj1.y-pAct.y));
+
+    if (dist<4.0){
+      ROS_DEBUG("Distancia al objetivo: %f", dist);
+      int segment = nearestSegment(pOri, pObj1, pObj2, pAct);
+      if (segment==2 || dist<0.5){
+        originPos = Wpath[0];
+        Wpath.erase(Wpath.begin());
+        if (segment==2)
+          ROS_INFO("Waypoint objetivo alcanzado por proximidad al segmento");
+        else
+          ROS_INFO("Waypoint objetivo alcanzado por proximidad al punto objetivo");
+      }
+      else if (segment==1){
+        ROS_DEBUG("Waypoint objetivo actual no alcanzado");
+      }
+      else if (segment==-1){
+        ROS_DEBUG("No se ha podido encontrar el segmento más cercano");
+      }
+    }
+  }
+/* */
+}
+
+int WaypointGlobalPlanner::nearestSegment(geometry_msgs::Point P0, geometry_msgs::Point P1, geometry_msgs::Point P2, geometry_msgs::Point pos)
+{
+  int result = -1;
+
+  if (P1.x==P0.x || P1.x==P2.x) {
+  	ROS_DEBUG("No se puede calcular la recta. Dvisión por 0");
+  }
+  else {
+    // Segment P0-P1
+    float m1 = (P1.y-P0.y)/(P1.x-P0.x);
+    float b1 = P1.y-m1*P1.x;
+
+    // Segment P1-P2
+    float m2 = (P2.y-P1.y)/(P2.x-P1.x);
+    float b2 = P1.y-m2*P1.x;
+
+    float dist2seg1 = abs(m1*pos.x+b1-pos.y)/sqrt(m1*m1+1);
+    float dist2seg2 = abs(m2*pos.x+b2-pos.y)/sqrt(m2*m2+1);
+    ROS_DEBUG("Distancia al seg1: %f", dist2seg1);
+    ROS_DEBUG("Distancia al seg2: %f", dist2seg2);
+
+    if (dist2seg1 <= dist2seg2){
+      if(pointInSegment(pos, P0, P1, m1, b1)){
+        result = 1;
+        //ROS_DEBUG("If A");
+      }
+      else if(pointInSegment(pos, P1, P2, m2, b2)){
+        result = 2;
+        //ROS_INFO("If B");
+      }
+    }
+    else if (dist2seg2 < dist2seg1){
+      if(pointInSegment(pos, P1, P2, m2, b2)){
+        result = 2;
+        //ROS_INFO("If C");
+      }
+      else if(pointInSegment(pos, P0, P1, m1, b1)){
+        result = 1;
+        //ROS_INFO("If D");
+      }
+    }
+  }
+
+  return result;
+}
+
+
+bool WaypointGlobalPlanner::pointInSegment(geometry_msgs::Point p, geometry_msgs::Point PIni, geometry_msgs::Point PFin, float m, float b)
+{
+  float mT = -1/m;
+  float bT = p.y-mT*p.x;
+  float xT = (bT-b)/(m-mT);
+
+  if ((PIni.x <= xT && xT <= PFin.x) || (PFin.x <= xT && xT <= PIni.x))
+    return true;
+  else
+    return false;
+}
+
+}  // namespace waypoint_global_planner

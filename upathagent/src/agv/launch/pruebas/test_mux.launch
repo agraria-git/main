@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="no_static_map" default="true"/>
+
+  <!--<arg name="base_global_planner" default="navfn/NavfnROS"/> -->
+  
+  <arg name="base_global_planner" default="$(env global_planner)"/>
+  <!--<arg name="base_global_planner" default="global_planner/GlobalPlanner"/> -->
+  <!--<arg name="base_global_planner" default="waypoint_global_planner/WaypointGlobalPlanner"/> -->
+
+  <arg name="base_local_planner" default="$(env local_planner)"/>
+  <!--<arg name="base_local_planner" default="teb_local_planner/TebLocalPlannerROS"/> -->
+  <!-- <arg name="base_local_planner" default="dwa_local_planner/DWAPlannerROS"/> -->
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+
+    <param name="base_global_planner" value="$(arg base_global_planner)"/>
+    <param name="base_local_planner" value="$(arg base_local_planner)"/>  
+    <!--param name="planner_frequency" value="3.0"/-->  
+    <rosparam file="$(find agv)/params/$(env ParamPath)/nav/planner.yaml" command="load"/>
+
+    <!-- observation sources located in costmap_common.yaml -->
+    <rosparam file="$(find agv)/params/$(env ParamPath)/nav/costmap_common.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find agv)/params/$(env ParamPath)/nav/costmap_common.yaml" command="load" ns="local_costmap" />
+
+    <!-- local costmap, needs size -->
+    <rosparam file="$(find agv)/params/$(env ParamPath)/nav/costmap_local.yaml" command="load" ns="local_costmap" />
+    <!-- <param name="local_costmap/width" value="5.0"/> -->
+    <!-- <param name="local_costmap/height" value="5.0"/> -->
+
+    <!-- static global costmap, static map provides size -->
+    <rosparam file="$(find agv)/params/$(env ParamPath)/nav/costmap_global_static.yaml" command="load" ns="global_costmap" unless="$(arg no_static_map)"/>
+    
+    <!-- global costmap with laser, for odom_navigation_demo -->
+    <rosparam file="$(find agv)/params/$(env ParamPath)/nav/costmap_global_laser.yaml" command="load" ns="global_costmap" if="$(arg no_static_map)"/>
+    <param name="global_costmap/width" value="200.0" if="$(arg no_static_map)"/>
+    <param name="global_costmap/height" value="200.0" if="$(arg no_static_map)"/>
+    <remap from="cmd_vel" to="raw_cmd_vel"/>
+    <!--<remap from="/move_base/TebLocalPlannerROS/via_points" to="/plan"/> -->
+  </node>
+
+  <node pkg="topic_tools" type="mux" respawn="false" name="mux" output="screen">
+    <param name="outtopic" value="cmd_vel"/>
+    <param name="intopic1" value="cmd_vel_mb">
+    <param name="intopic2" value="cmd_vel_mis">
+
+</launch>

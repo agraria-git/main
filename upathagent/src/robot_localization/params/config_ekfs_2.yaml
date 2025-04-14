@@ -1,0 +1,116 @@
+ekf_se_map:
+  frequency: 30
+  sensor_timeout: 0.1
+  two_d_mode: true
+  transform_time_offset: 0.0
+  transform_timeout: 0.0
+  print_diagnostics: true
+  debug: false
+  debug_out_file: /home/nvidia/se_map.txt
+
+  map_frame: map
+  odom_frame: odom
+  base_link_frame: base_link
+  world_frame: odom
+
+# -------------------------------------
+# Wheel odometry:
+
+  odom0: /odomScout
+  odom0_config: [false, false, false,
+                 false, false, false,
+                 true,  true,  false,
+                 false, false,  true,
+                 false, false, false]
+  odom0_queue_size: 2
+  odom0_nodelay: false
+  odom0_differential: false
+  odom0_relative: false
+
+# imu configure:
+
+  imu0: /imu/data
+  imu0_config: [false, false, false,
+                false, false,  true,
+                false, false, false,
+                false, false,  true,
+                false, false, false]
+  imu0_nodelay: false
+  imu0_differential: false
+  imu0_relative: false
+  imu0_queue_size: 2
+  imu0_remove_gravitational_acceleration: true
+
+# pose configure:
+
+  pose0: /pose/gps
+  pose0_config: [true,   true, false,
+                 false, false,  false,
+                 false, false, false,
+                 false, false, false,
+                 false, false, false]
+  pose0_queue_size: 2
+  pose0_nodelay: false
+  pose0_differential: false
+  pose0_relative: false
+
+  # GPS odometry:
+
+#  odom1: /odometry/gps
+ # odom1_config: [true,   true, false,
+  #               false, false, false,
+   #              false, false, false,
+    #             false, false,  true,
+     #            false, false, false]
+ # odom1_queue_size: 2
+ # odom1_nodelay: true
+ # odom1_differential: false
+ # odom1_relative: false
+
+# -------------------------------------
+
+  use_control: false
+
+  process_noise_covariance: [1e-2, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    1e-2, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    1e-6, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    1e-6, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    1e-6, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    1e-2, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    1e-2,  0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     1e-2,  0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     1e-6, 0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    1e-6, 0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    1e-6, 0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    1e-2, 0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    1e-2, 0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    1e-2, 0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    1e-6]
+
+  initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    1e-6, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    1e-6, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    1e-6, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    1e-9, 0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    1e-9, 0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    1e-6, 0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-6,  0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-6,  0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,  0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1e-9, 0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1e-9, 0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-6]
+
+navsat_transform:
+  frequency: 30
+  delay: 0.0 #3.0
+  magnetic_declination_radians: 0.01151918 #0.0842
+  yaw_offset: 0.0 #0.45
+  zero_altitude: true
+  broadcast_utm_transform: true
+#  broadcast_cartesian_transform: true
+  publish_filtered_gps: true
+  use_odometry_yaw: false
+  wait_for_datum: false

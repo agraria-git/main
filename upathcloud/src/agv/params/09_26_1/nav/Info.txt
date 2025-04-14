@@ -1,0 +1,25 @@
+planner.yaml
+	MoveBase
+		controller_frequency = 5.0
+			The rate in Hz at which to run the control loop and send velocity commands to the base.
+	TEB
+  		dt_ref: 0.3
+  			Desired temporal resolution of the trajectory (the trajectory is not fixed to dt_ref since the temporal resolution is part of the optimization, but the trajectory will be resized between iterations if dt_ref +-dt_hysteresis is violated.
+  		dt_hysteresis: 0.1
+  			Hysteresis for automatic resizing depending on the current temporal resolution, usually approx. 10% of dt_ref is recommended
+  		max_global_plan_lookahead_dist = 2.0
+			Specify the maximum length (cumulative Euclidean distances) of the subset of the global plan taken into account for optimization. The actual length is than determined by the logical conjunction of the local costmap size and this maximum bound. Set to zero or negative in order to deactivate this limitation.
+
+costmap_common.yaml
+		update_frequency = 4.0
+			The frequency in Hz for the map to be updated.
+		publish_frequency = 1.0
+			The frequency in Hz for the map to be publish display information.
+		transform_tolerance = 0.5
+			Specifies the delay in transform (tf) data that is tolerable in seconds. This parameter serves as a safeguard to losing a link in the tf tree while still allowing an amount of latency the user is comfortable with to exist in the system. For example, a transform being 0.2 seconds out-of-date may be tolerable, but a transform being 8 seconds out of date is not. If the tf transform between the coordinate frames specified by the global_frame and robot_base_frame parameters is transform_tolerance seconds older than ros::Time::now(), then the navigation stack will stop the robot.
+
+costmap_local.yaml
+		width = 5.0
+			The width of the map in meters
+		height = 5.0
+			The height of the map in meters

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="">
+        <meta name="author" content="">
+        <title>MagicPPP Robot Demo</title>
+        <!-- Custom fonts for this template-->
+        <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+        <!-- Custom styles for this template-->
+        <link href="css/sb-admin-2.min.css" rel="stylesheet">
+        <link href="https://leafletjs.com/atom.xml" type="application/atom+xml" rel="alternate" title="Leaflet Dev Blog Atom Feed" />
+        <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,300' rel='stylesheet' type='text/css'>
+        <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+        <script
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvkL4wRv-8IuwbmfkSPVQ6lW1ZN3amdLI&libraries=&v=weekly"
+            defer
+            ></script>
+        <style type="text/css">
+            /* Set the size of the div element that contains the map */
+            #map {
+            height: 400px;
+            /* The height is 400 pixels */
+            width: 100%;
+            /* The width is the width of the web page */
+            }
+        </style>
+        <script>
+                        
+            $( document ).ready(function() {
+              console.log( "ready!" );
+
+              // The location of GMV
+              var gmv = { lat: 37.4053632204717, lng: -6.005749846033911 };
+              // The map, centered at Uluru
+              var map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 18,
+                center: gmv,
+              });
+              // The marker, positioned at Uluru
+              /*
+              var marker = new google.maps.Marker({
+                position: gmv,
+                map: map,
+              });
+              */
+
+              // Indica el tipo de modo en el que se encuentra
+              // 0: sin modo
+              // 1: modo "Generar Ruta"
+              // 2: modo "Reproducir Ruta"
+              var mode = 0;
+
+              // Ruta que se almacena en json
+              var route = [];
+              $("#json").text(JSON.stringify(route, undefined, 2));
+
+              // Camino que reproduce el robot
+              var path = [];
+
+              // Punto que se está guardando actualmente
+              var routePoint = 0;
+              var pathPoint = 0;
+            
+              //mqtt websocket enabled broker
+              var wsbroker = "test.mosquitto.org";
+
+              // port for above
+              var wsport = 8080;
+            
+              var client = new Paho.MQTT.Client(wsbroker, wsport,
+                "magicppp_" + parseInt(Math.random() * 100, 10));
+            
+              var options = {
+                timeout: 3,
+                onSuccess: function () {
+                  console.log("mqtt connected");
+                  // Connection succeeded; subscribe to our topic, you can add multile lines of these
+                  client.subscribe('/magicppp', {qos: 1});
+            
+                  //use the below if you want to publish to a topic on connect
+                  message = new Paho.MQTT.Message("TEST");
+                  message.destinationName = "/magicppp";
+                  client.send(message);
+                },
+
+                onFailure: function (message) {
+                  console.log("Connection failed: " + message.errorMessage);
+                }
+              };
+            
+              client.onConnectionLost = function (responseObject) {
+                console.log("connection lost: " + responseObject.errorMessage);
+              };
+            
+              client.onMessageArrived = function (message) {
+                console.log(message.destinationName, ' -- ', message.payloadString);
+                switch(mode){
+                  case 0:
+                    console.log("Caso 0: Nada que hacer.");
+                    break;
+                  case 1:
+                    console.log("Caso 1: Hay que grabar el punto y mostrarlo por pantalla.");
+                    saveAndShow(message);
+                    break;
+                  case 2:
+                    console.log("Caso 2: Hay que enviar el siguiente punto por mqtt.");
+                    startRoute(message);
+                    break;
+                }
+              };
+
+              // Se realiza la conexión
+              client.connect(options);
+              
+              $( "#generarRuta" ).click(function() {
+                console.log( "generarRuta" );
+
+                if(mode == 0){
+                  $( "#generarRuta" ).text("Parar")
+                  mode = 1;
+                  //use the below if you want to publish to a topic on connect
+                  message = new Paho.MQTT.Message('{"command": "start-generate"}');
+                  message.destinationName = "/magicppp/robot";
+                }else{
+                  if(mode == 1){
+                    $( "#generarRuta" ).text("Generar")
+                    mode = 0;
+                    message = new Paho.MQTT.Message('{"command": "stop-generate"}');
+                    message.destinationName = "/magicppp/robot";
+                  }
+                }
+                client.send(message);
+              });
+            
+              $( "#reproducirRuta" ).click(function() {
+                console.log( "reproducirRuta" );
+                if(mode == 0){
+                  $( "#reproducirRuta" ).text("Parar")
+                  mode = 2;
+                  message = new Paho.MQTT.Message('{"command": "start-reproduce", "route":' + JSON.stringify(route) + '}');
+                  message.destinationName = "/magicppp/robot";
+                }else{
+                  if(mode == 2){
+                    $( "#reproducirRuta" ).text("Reproducir")
+                    mode = 0;
+                    message = new Paho.MQTT.Message('{"command": "stop-reproduce"}');
+                    message.destinationName = "/magicppp/robot";
+                  }
+                }
+
+                // Se manda el mensaje de start
+                client.send(message);
+              });
+
+              // Función que se encarga de salvar el punto en la ruta y mostrarlo en el mapa
+              function saveAndShow(message){
+                console.log("saveAndShow");
+
+                point = JSON.parse(message.payloadString);
+                console.log(point);
+
+                // Se almacena y se actualiza la ruta
+                route[routePoint] = point;
+                routePoint ++;
+                $("#jsonRoute").text(JSON.stringify(route, undefined, 2));
+
+                console.log(route);
+
+                // Se pinta el punto de la ruta
+                const agvRoute = new google.maps.Polyline({
+                  path: route,
+                  geodesic: true,
+                  strokeColor: "#FF0000",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 2,
+                });
+
+                agvRoute.setMap(map);
+
+                var bounds = new google.maps.LatLngBounds();
+                for (var i = 0; i < route.length; i++) {
+                  bounds.extend(route[i]);
+                }
+
+                for (var i = 0; i < path.length; i++) {
+                  bounds.extend(path[i]);
+                }
+
+                bounds.getCenter();
+
+                map.fitBounds(bounds);
+
+              }
+
+              // Función que se encarga de enviar el siguiente punto al actual
+              function startRoute(message){
+                console.log("sendNextPoint");
+
+                point = JSON.parse(message.payloadString);
+                console.log(point);
+
+                // Se almacena y se actualiza la ruta
+                path[pathPoint] = point;
+                pathPoint ++;
+                $("#jsonPath").text(JSON.stringify(path, undefined, 2));
+
+                console.log(path);
+
+                // Se pinta el punto de la ruta
+                const agvPath = new google.maps.Polyline({
+                  path: path,
+                  geodesic: true,
+                  strokeColor: "#0000FF",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 2,
+                });
+
+                agvPath.setMap(map);
+
+                var bounds = new google.maps.LatLngBounds();
+                for (var i = 0; i < path.length; i++) {
+                  bounds.extend(path[i]);
+                }
+
+                for (var i = 0; i < route.length; i++) {
+                  bounds.extend(route[i]);
+                }
+
+                bounds.getCenter();
+
+                map.fitBounds(bounds);
+              }
+            });
+            
+        </script>
+    </head>
+    <body id="page-top">
+        <!-- Page Wrapper -->
+        <div id="wrapper">
+            <!-- Content Wrapper -->
+            <div id="content-wrapper" class="d-flex flex-column">
+                <!-- Main Content -->
+                <div id="content">
+                    <!-- Begin Page Content -->
+                    <div class="container-fluid">
+                        <!-- Page Heading -->
+                        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                            <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+                        </div>
+                        
+                        <!-- Content Row -->
+                        <div class="row">
+                            <div class="col-xl-8 col-lg-7">
+                                <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" id="generarRuta">
+                                  Generar
+                                </a>
+                                <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" id="reproducirRuta">
+                                  Reproducir
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Content Row -->
+                        <div class="row">
+                            <!-- Area Chart -->
+                            <div class="col-xl-12 col-lg-7">
+                                <div class="card shadow mb-4">
+                                    <!-- Card Header - Dropdown -->
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">Mapa</h6>
+                                    </div>
+                                    <!-- Card Body -->
+                                    <div class="card-body">
+                                        <div id="map" class="map map-home" style="height: 300px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content Row -->
+                        <div class="row">
+                            <div class="col-xl-6 col-lg-5">
+                                <div class="card shadow mb-4">
+                                    <!-- Card Header - Dropdown -->
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">Ruta</h6>
+                                    </div>
+                                    <!-- Card Body -->
+                                    <div class="card-body">
+                                        <div class="chart-pie pt-4 pb-2">
+                                            <pre id="jsonRoute">
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-6 col-lg-5">
+                                <div class="card shadow mb-4">
+                                    <!-- Card Header - Dropdown -->
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">Camino</h6>
+                                    </div>
+                                    <!-- Card Body -->
+                                    <div class="card-body">
+                                        <div class="chart-pie pt-4 pb-2">
+                                            <pre id="jsonPath">
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- /.container-fluid -->
+                </div>
+                <!-- End of Main Content -->
+                <!-- Footer -->
+                <footer class="sticky-footer bg-white">
+                    <div class="container my-auto">
+                        <div class="copyright text-center my-auto">
+                            <span>Copyright &copy; GMV</span>
+                        </div>
+                    </div>
+                </footer>
+                <!-- End of Footer -->
+            </div>
+            <!-- End of Content Wrapper -->
+        </div>
+        <!-- End of Page Wrapper -->
+        <!-- Scroll to Top Button-->
+        <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+        </a>
+        
+        <!-- Bootstrap core JavaScript-->
+        <script src="vendor/jquery/jquery.min.js"></script>
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <!-- Core plugin JavaScript-->
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+        <!-- Custom scripts for all pages-->
+        <script src="js/sb-admin-2.min.js"></script>
+        <!-- Page level plugins -->
+        <script src="vendor/chart.js/Chart.min.js"></script>
+    </body>
+</html>

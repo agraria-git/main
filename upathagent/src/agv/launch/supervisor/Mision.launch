@@ -1,0 +1,5 @@
+<launch>
+  <master auto="start"/>
+  <node name="misionNode"          pkg="agv"  type="missions.py"/>
+
+</launch>

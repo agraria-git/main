@@ -1,0 +1,12 @@
+<launch>
+
+  <node pkg="agv" type="imu_static_tf.py" name="imu_static_tf" >
+  </node>
+
+  <node pkg="agv" type="laser_static_tf.py" name="laser_static_tf" >
+  </node>
+
+  <node pkg="agv" type="magic_static_tf.py" name="magic_static_tf" >
+  </node>
+
+</launch>

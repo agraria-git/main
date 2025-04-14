@@ -1,0 +1,274 @@
+/* Set the size of the div element that contains the map */
+#map {
+height: 400px;
+/* The height is 400 pixels */
+width: 100%;
+/* The width is the width of the web page */
+}
+
+body {
+    font-family: 'Nunito', sans-serif !important;
+    color: #303030;
+}
+
+#wrapper #content-wrapper {
+    background-color: #fff !important;
+}
+
+#floating-panel {
+    position: absolute;
+    top: 15px;
+    left: 25%;
+    z-index: 5;
+    background-color: #fff;
+    padding: 5px;
+    border: 1px solid #999;
+    text-align: center;
+    font-family: "Roboto", "sans-serif";
+    font-size: 10px;
+    line-height: 5px;
+    padding-left: 10px;
+}
+
+.container-fluid {
+    padding-top: 75px;
+}
+
+.card {
+    border-radius: 0px !important;
+}
+
+.logo {
+    width: 135px;
+    margin-left: 5px;
+}
+
+
+.logoGmv {
+    width: 135px;
+    /* margin-left: 84%; */
+    float:right;
+}
+
+.logomain {
+    width: 180px;
+    /* margin-left: 5px; */
+    float:left;
+}
+
+.header {
+    position: fixed;
+    z-index: 999;
+    top: 0px;
+    height: 75px;
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+    /* text-align: center; */
+}
+
+.btn-primary {
+    color: #df0024 !important;
+    background-color: #fff !important;
+    border: 1px solid #e7e7e7 !important;
+    border-radius: 0 !important;
+    box-shadow: unset;
+}
+
+.btn-primary:focus {
+    box-shadow: unset !important;
+}
+
+.btn-header {
+    position: absolute;
+    right: 15px;
+}
+
+.text-primary {
+    color: #df0024 !important;
+}
+
+.card-youtube {
+    min-height: 500px !important;
+}
+
+label {
+  /* background-color: indigo; */
+  /* color: white; */
+  /* padding: 0.5rem; */
+  font-family: sans-serif;
+  border-radius: 0.3rem;
+  /* cursor: pointer; */
+  /* margin-top: 0.5rem; */
+  margin-right: 1rem;
+  /* margin-left: 1rem; */
+}
+
+#file-chosen{
+  margin: 0rem 0.3rem;
+}
+
+.control-panel {
+    position: relative;
+    float: right;
+    width: 96px;
+    height: 96px;
+}
+
+.control-panel a {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+}
+
+.control-panel #up {
+    top: 0px;
+    left: 33px;
+}
+
+.control-panel #left {
+    top: 31px;
+    left: 2px;
+}
+
+.control-panel #right {
+    top: 31px;
+    right: 0px;
+}
+
+.control-panel #down {
+    bottom: 2px;
+    left: 33px;
+}
+
+.control-panel #clockwise {
+    top: 0px;
+    right: 0px;
+}
+
+.control-panel #anticlockwise {
+    top: 0px;
+    left: 2px;
+}
+
+footer {
+    background-color: #424141;
+}
+
+footer span {
+    color: #e8e7e8;
+}
+
+.contextMenu {
+  background-color: rgb(255, 255, 255);
+  border: 2px solid rgb(255, 255, 255);
+  border-radius: 3px;
+  box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: center;
+  color: #0d1f49;
+  width: 20vw;
+  margin: 1px;/*Please note that this margin is necessary otherwise browser will open its own context menu*/
+}
+
+.menu {
+  width: 150px;
+  box-shadow: 3px 3px 5px #888888;
+  border-style: solid;
+  border-width: 1px;
+  border-color: grey;
+  border-radius: 2px;
+  position: fixed;
+  display: none;
+}
+
+.menu-item {
+  height: 20px;
+  background-color: white;
+}
+
+.menu-item:hover {
+  background-color: #6CB5FF;
+  cursor: pointer;
+}
+
+
+
+div.logScrollBox {
+background-color: rgb(255, 255, 255);
+width: 100%;
+height: 503px;
+overflow: scroll;
+}
+
+div.paramScrollBox {
+    background-color: rgb(255, 255, 255);
+    width: 100%;
+    height: 503px;
+    overflow: scroll;
+    }
+
+
+
+              
+/* Style the tab */
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+    
+/* Style the buttons inside the tab */
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+    color:#df0024;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+
+div.scrollParam{
+    margin-bottom: 15px;
+    /* margin-left: 50px; */
+  }
+  label.scrollParam {
+    display: inline-block;
+    width: 160px;
+    color: #777777;
+    /* margin-right: 10rem; */
+  }
+  input.scrollParam {
+    width: 80px;
+    height: 25px;
+    /* padding: 1px; */
+      /* padding: 5px 10px; */
+    }
+
+    p.scrollParam{
+        color: #777777;
+        font-size: 20px;
+    }

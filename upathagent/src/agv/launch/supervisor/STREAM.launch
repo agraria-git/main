@@ -1,0 +1,5 @@
+<launch>
+  <master auto="start"/>
+  <node name="streamPositionNode"          pkg="agv"  type="streamPositionNode.py"/>
+
+</launch>

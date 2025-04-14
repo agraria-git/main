@@ -1,0 +1,16 @@
+<launch>
+	<!-- master auto="start"/ -->
+	<include file="$(find agv)/launch/supervisor/SCOUT.launch" />
+	<include file="$(find agv)/launch/supervisor/LIDAR.launch" />
+	<!-- include file="$(find agv)/launch/supervisor/MAGIC.launch" / -->
+	<rosparam param="magicPass"> 1 </rosparam>
+	<node name="magicSim"  pkg="agv"  type="simuladorMagic.py"/>
+	
+	<node name="imuNode"          pkg="agv"  type="imuNode.py"/>
+		<param name="serial_port"         type="string" value="/dev/ttyUSB1"/>
+
+	<node name="magnetometerNode" pkg="agv" type="magnetometerNode.py"/>
+
+	<include file="$(find yocs_velocity_smoother)/launch/standalone.launch" />
+  
+</launch>

@@ -1,0 +1,4 @@
+Carpeta de parámetros del viernres 7 de octubre
+
+-> Intento de implementación de la cámara en el costmap para hacer uso de la pointcloud
+

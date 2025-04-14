@@ -1,0 +1,21 @@
+<launch>
+	<master auto="start"/>
+
+	<!-- RPLIDAR & IMU & MAGIC & Complementary filter & SCOUT MINI -->
+	<include file="$(find agv)/launch/agilexv1/sensoresTest.launch"></include>
+
+
+	<!-- MQTT & SAVE POINT & STREAM POSITION -->
+	<include file="$(find agv)/launch/agilexv1/interfaz.launch"/>
+
+
+	<!-- MULTIGOAL -->
+	<!-- node name="multiGoalNodev2"  pkg="agv"  type="multiGoalNodev2.py"/ -->
+
+
+	<!-- MOVE BASE -->
+	<!-- include file="$(find my_robot_name_2dnav)/launch/move_base_pruebas_local.launch">
+    <arg name="no_static_map" value="true"/>
+  </include -->
+
+</launch>

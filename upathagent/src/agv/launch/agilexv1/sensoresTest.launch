@@ -1,0 +1,74 @@
+<launch>
+  <master auto="start"/>
+
+
+
+
+<!-- RPLIDAR -->
+  <node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode"> <!-- output="screen" -->
+    <param name="serial_port"         type="string" value="/dev/rplidar"/>  
+    <!-- <param name="serial_port"         type="string" value="/dev/ttyUSB1"/> -->
+    <param name="serial_baudrate"     type="int"    value="256000"/><!--A3 -->
+    <param name="frame_id"            type="string" value="laser"/>
+    <param name="inverted"            type="bool"   value="false"/>
+    <param name="angle_compensate"    type="bool"   value="true"/>
+    <param name="scan_mode"           type="string" value="Stability"/>
+  </node>
+
+
+<!-- IMU -->
+  <node name="imuNode"          pkg="agv"  type="imuNode.py">
+    <param name="serial_port"         type="string" value="/dev/IMU"/>
+  </node>
+
+  <node name="magnetometerNode"          pkg="agv"  type="magnetometerNode.py"/>
+
+<!--MAGIC-->
+   <node name="magicNode"          pkg="agv"  type="simuladorMagic.py"/>
+
+
+   <!-- #### Nodelet manager ###################################################### -->
+  
+  <!-- #### Complementary filter -->
+<node pkg="nodelet" type="nodelet" name="imu_manager"
+    args="manager" output="screen" />
+
+  <node pkg="imu_complementary_filter" type="complementary_filter_node"
+      name="complementary_filter_gain_node" output="screen">
+    <param name="do_bias_estimation" value="false"/>
+    <param name="do_adaptive_gain" value="false"/>
+    <param name="use_mag" value="true"/>
+    <param name="gain_acc" value="0.01"/>
+    <param name="gain_mag" value="0.01"/>
+    <param name="publish_debug_topics" value="true"/>
+
+  </node>
+
+  <!--node pkg="nodelet" type="nodelet" name="ImuFilterNodelet"
+    args="load imu_filter_madgwick/ImuFilterNodelet imu_manager"
+    output="screen">
+   <param name= "publish_debug_topics" value="true"/>
+   <param name="publish_tf" value="false"/>
+</node-->
+ 
+<!-- SCOUT MINI -->
+
+  <arg name="port_name" value="can0" />
+  <arg name="simulated_robot" value="false" />
+  <arg name="tf_pub" value="false" />
+  <arg name="model_xacro" default="$(find scout_description)/urdf/scout_v2.xacro" />
+  <arg name="odom_topic_name" default="odomScout" />
+  <arg name="is_scout_mini" default="true" />
+  <include file="$(find scout_base)/launch/scout_base.launch">
+    <arg name="port_name" default="$(arg port_name)" />
+    <arg name="simulated_robot" default="$(arg simulated_robot)" />
+    <arg name="tf_pub" default="$(arg tf_pub)" />
+    <arg name="odom_topic_name" default="$(arg odom_topic_name)" />
+    <arg name="is_scout_mini" default="$(arg is_scout_mini)" />
+  </include>
+  <include file="$(find scout_description)/launch/description.launch">
+    <arg name="model_xacro" default="$(arg model_xacro)" />
+  </include>
+
+
+</launch>

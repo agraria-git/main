@@ -1,0 +1,5 @@
+<launch>
+  <master auto="start"/>
+  <node name="mqttNode"          pkg="agv"  type="mqttNodeNew.py"/>
+
+</launch>

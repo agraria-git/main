@@ -1,0 +1,8 @@
+<launch>
+
+	<include file="$(find agv)/launch/supervisor/SCOUT.launch" />
+	<include file="$(find agv)/launch/supervisor/LIDAR.launch" />
+    <include file="$(find agv)/launch/supervisor/IMU.launch" />
+  	<include file="$(find agv)/launch/supervisor/MAGIC.launch" />
+  	
+</launch>
